@@ -1,0 +1,39 @@
+#!/bin/bash
+yum update -y
+useradd --no-create-home --shell /bin/false prometheus
+mkdir /etc/prometheus
+mkdir /var/lib/prometheus
+chown prometheus:prometheus /var/lib/prometheus
+cd /tmp/
+wget https://github.com/prometheus/prometheus/releases/download/v2.37.2/prometheus-2.37.2.linux-amd64.tar.gz
+tar -xvf prometheus-2.37.2.linux-amd64.tar.gz
+cd prometheus-2.37.2.linux-amd64
+mv console* /etc/prometheus
+mv prometheus.yml /etc/prometheus
+chown -R prometheus:prometheus /etc/prometheus
+mv prometheus /usr/local/bin/
+chown prometheus:prometheus /usr/local/bin/prometheus
+cat << EOT > /etc/systemd/system/prometheus.service
+  [Unit]
+  Description=Prometheus
+  Wants=network-online.target
+  After=network-online.target
+
+  [Service]
+  User=prometheus
+  Group=prometheus
+  Type=simple
+  ExecStart=/usr/local/bin/prometheus \
+      --config.file /etc/prometheus/prometheus.yml \
+      --storage.tsdb.path /var/lib/prometheus/ \
+      --web.console.templates=/etc/prometheus/consoles \
+      --web.console.libraries=/etc/prometheus/console_libraries
+
+  [Install]
+  WantedBy=multi-user.target
+EOT
+systemctl daemon-reload
+systemctl enable prometheus
+systemctl start prometheus
+firewall-cmd --add-service=prometheus --permanent
+firewall-cmd --reload
