@@ -35,6 +35,13 @@ resource "aws_security_group" "sg" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+  # Prometheus Node Exporter web access from anywhere
+  ingress {
+    from_port   = 9100
+    to_port     = 9100
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
   # Outbound Rules
   # Internet access to anywhere
   egress {
@@ -68,6 +75,7 @@ resource "aws_instance" "ec2instance1" {
 resource "aws_instance" "ec2instance2" {
   ami                         = "ami-02aeff1a953c5c2ff"
   instance_type               = "t3.micro"
+  user_data                   = templatefile("my_exporter_script.tftpl", {})
   key_name                    = aws_key_pair.key_pair.key_name
   vpc_security_group_ids      = [aws_security_group.sg.id]
   subnet_id                   = var.subnet_id2
