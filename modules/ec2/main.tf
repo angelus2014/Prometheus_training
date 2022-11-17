@@ -28,6 +28,13 @@ resource "aws_security_group" "sg" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+  # Prometheus web access from anywhere
+  ingress {
+    from_port   = 9090
+    to_port     = 9090
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
   # Outbound Rules
   # Internet access to anywhere
   egress {
@@ -47,7 +54,7 @@ resource "aws_key_pair" "key_pair" {
 resource "aws_instance" "ec2instance1" {
   ami                         = "ami-02aeff1a953c5c2ff"
   instance_type               = "t3.micro"
-  user_data                   = templatefile("my_amazon_script.tftpl", { request_id = "nginx" })
+  user_data                   = templatefile("my_prometheus_script.tftpl", {})
   key_name                    = aws_key_pair.key_pair.key_name
   vpc_security_group_ids      = [aws_security_group.sg.id]
   subnet_id                   = var.subnet_id1
