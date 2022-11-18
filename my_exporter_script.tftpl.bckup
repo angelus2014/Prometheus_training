@@ -1,0 +1,105 @@
+#!/bn/bash
+yum update -y
+useradd -Mrs /bin/false node_exporter
+cd /tmp
+wget https://github.com/prometheus/node_exporter/releases/download/v1.4.0/node_exporter-1.4.0.linux-amd64.tar.gz
+tar -xvf node_exporter-1.4.0.linux-amd64.tar.gz
+mv node_exporter-1.4.0.linux-amd64/node_exporter /usr/local/bin/
+cat << EOT > /etc/systemd/system/node_exporter.service
+  [Unit]
+  Description=Node Exporter
+  After=network.target
+
+  [Service]
+  User=node_exporter
+  Group=node_exporter
+  Type=simple
+  Restart=on-failure
+  ExecStart=/usr/local/bin/node_exporter
+
+  [Install]
+  WantedBy=multi-user.target
+EOT
+sleep 3
+systemctl daemon-reload
+systemctl enable node_exporter
+systemctl start node_exporter
+sleep 5
+useradd -Mrs /bin/false process_exporter
+cd /tmp
+wget https://github.com/ncabatoff/process-exporter/releases/download/v0.7.10/process-exporter-0.7.10.linux-amd64.tar.gz
+tar -xvf process-exporter-0.7.10.linux-amd64.tar.gz
+mv process-exporter-0.7.10.linux-amd64/process-exporter /usr/local/bin/
+chown process_exporter:process_exporter /usr/local/bin/process-exporter
+mkdir /etc/process_exporter
+chown process_exporter:process_exporter /etc/process_exporter
+# cat << EOT > /etc/process_exporter/process-exporter.yaml
+# process_names:
+#   - comm:
+#     # Data service responsible for storing user data
+#     - memcached
+#     # Couchbase cluster manager run as Erlang virtual machines -
+#     # babysitter, ns_server, and ns_couchdb
+#     - beam.smp
+#     # Index service
+#     - indexer
+#     # Full-Text Search Service
+#     - cbft
+#     # Analytics Service
+#     - cbas
+#     # Couchbase Query service
+#     - cbq-engine
+#     # Extracts secondary key from documents
+#     - projector
+#     # Cross Data Center Replication (XDCR) - replicates data from one cluster to another
+#     - goxdcr
+#     # Utility in Go to get disk usage stats
+#     - godu
+#     # Process that acts as a bridge between ns_server (Erlang) and the other
+#     # server components (cbq- engine, cbft, etc.)
+#     - goport
+#     # Service that is used to encrypt the cluster configuration stored on disk
+#     - gosecrets
+#     # Erlang port process (wrapper) used to talk to the saslauthd daemon for authentication purposes
+#     - saslauthd-port
+#     # Erlang-specfic process which acts as a name server for Erlang distribution
+#     - epmd
+#     # Erlang-specific process used to collect CPU: 1 for ns_server VM and 1 for ns_couchdb VM
+#     - cpu_sup
+#     # Erlang-specific process used to collect memory usage: 1 for ns_server VM
+#     # and 1 for ns_couchdb VM
+#     - memsup
+#     # Built-in Erlang port process that is used to perform name service lookup
+#     - inet_gethost
+#     # Open source tool sigar that is used to collect system information
+#     - portsigar
+#     # Eventing Service
+#     - eventing-produc
+#     # Eventing Service
+#     - eventing-consum
+#     - uwsgi
+#     - prometheus
+#     - alertmanager
+#     - grafana
+# EOT
+# touch /etc/process_exporter/process-exporter.yaml
+# chown process_exporter:process_exporter /etc/process_exporter/process-exporter.yaml
+cat << EOT > /etc/systemd/system/process_exporter.service
+  [Unit]
+  Description=Process Exporter
+  After=network.target
+
+  [Service]
+  User=process_exporter
+  Group=process_exporter
+  Type=simple
+  Restart=on-failure
+  ExecStart=/usr/local/bin/process-exporter \
+    --web.listen-address=:9256
+  [Install]
+  WantedBy=multi-user.target
+EOT
+sleep 3
+systemctl daemon-reload
+systemctl enable process-exporter
+systemctl start process-exporter
