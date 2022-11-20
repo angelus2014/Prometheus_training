@@ -1,0 +1,44 @@
+groups:
+  - name: SoftServe_task
+    rules:
+      # Alert for any instance that is unreachable for >1 minutes.
+      - alert: InstanceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: page
+        annotations:
+          summary: "Instance {{ $labels.instance }} down"
+          description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minutes."
+      # Rule for disk usage prediction
+      - alert: DiskWillFillIn4Hours
+        expr: predict_linear(node_filesystem_free{job="node"}[1h], 4 * 3600) < 0
+        for: 5m
+        labels:
+          severity: page
+      # Rule for checking if there is more than 10% disk space left
+      - alert: DiskSpace10%Free
+        expr: 100 - (100 * node_filesystem_avail_bytes / node_filesystem_size_bytes) > 90
+        labels:
+          severity: moderate
+        annotations:
+          summary: "Instance {{ $labels.instance }} is low on disk space"
+          description: "diskspace on {{ $labels.instance }} is used over {{ $value }}% ."
+      # Node memory is filling up (< 10% left)
+      - alert: HostOutOfMemory
+        expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100 < 10
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Host out of memory (instance {{ $labels.instance }})
+          description: "Node memory is filling up (< 10% left)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+      # The node is under heavy memory pressure. High rate of major page faults
+      - alert: HostMemoryUnderMemoryPressure
+        expr: rate(node_vmstat_pgmajfault[1m]) > 1000
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Host memory under memory pressure (instance {{ $labels.instance }})
+          description: "The node is under heavy memory pressure. High rate of major page faults\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
