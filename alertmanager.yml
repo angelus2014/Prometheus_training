@@ -1,0 +1,33 @@
+global:
+
+templates:
+- '/etc/alertmanager/*.tmpl'
+# The root route on which each incoming alert enters.
+route:
+  # default route if none match
+  receiver: alert-emailer
+
+  group_by: ['alertname', 'priority']
+
+  # All the above attributes are inherited by all child routes and can
+  # overwritten on each.
+
+receivers:
+- name: alert-emailer
+  email_configs:
+  - to: 'receiver1@example.com'
+    send_resolved: false
+    from: 'sender@example.com'
+    smarthost: 'smtp.example.com:587'
+    auth_username: 'sender@example.com'
+    auth_password: 'IamPassword'
+    auth_secret: 'sender@example.com'
+    auth_identity: 'sender@example.com'
+  - to: 'receiver2@example.com'
+    send_resolved: false
+    from: 'sender@example.com'
+    smarthost: 'smtp.example.com:587'
+    auth_username: 'sender@example.com'
+    auth_password: 'IamPassword'
+    auth_secret: 'sender@example.com'
+    auth_identity: 'sender@example.com'

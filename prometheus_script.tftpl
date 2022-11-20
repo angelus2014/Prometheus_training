@@ -42,6 +42,7 @@ cd /tmp
 wget https://github.com/prometheus/node_exporter/releases/download/v1.4.0/node_exporter-1.4.0.linux-amd64.tar.gz
 tar -xvf node_exporter-1.4.0.linux-amd64.tar.gz
 mv node_exporter-1.4.0.linux-amd64/node_exporter /usr/local/bin/
+chown node_exporter:node_exporter /usr/local/bin/node_exporter
 cat << EOT > /etc/systemd/system/node_exporter.service
   [Unit]
   Description=Node Exporter
@@ -89,3 +90,33 @@ EOT
 systemctl daemon-reload
 systemctl enable process_exporter
 systemctl start process_exporter
+useradd -Mrs /bin/false alertmanager
+cd /tmp
+wget https://github.com/prometheus/alertmanager/releases/download/v0.24.0/alertmanager-0.24.0.linux-amd64.tar.gz
+tar -xvf alertmanager-0.24.0.linux-amd64.tar.gz
+mv alertmanager-0.24.0.linux-amd64/alertmanager /usr/local/bin/
+chown alertmanager:alertmanager /usr/local/bin/alertmanager
+mkdir /etc/alertmanager
+chown alertmanager:alertmanager /etc/alertmanager
+touch /etc/alertmanager/alertmanager.yml
+chown alertmanager:alertmanager /etc/alertmanager/alertmanager.yml
+mkdir /var/lib/alertmanager
+cat << EOT > /etc/systemd/system/alertmanager.service
+  [Unit]
+  Description=AlertManager Server Service
+  After=network-online.target
+
+  [Service]
+  User=alertmanager
+  Group=alertmanager
+  Type=Simple
+  ExecStart=/usr/local/bin/alertmanager \
+      --config.file /etc/alertmanager/alertmanager.yml \
+      --storage.path /var/lib/alertmanager
+
+  [Install]
+  WantedBy=multi-user.target
+EOT
+systemctl daemon-reload
+systemctl start alertmanager
+systemctl enable alertmanager
